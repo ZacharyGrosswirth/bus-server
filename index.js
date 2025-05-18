@@ -39,6 +39,7 @@ io.on("connection", (socket) => {
 
   socket.on("createRoom", (data, cb) => {
     const { name, maxPlayers, password } = data;
+
     if (
       typeof maxPlayers !== "number" ||
       maxPlayers < 2 ||
@@ -52,9 +53,9 @@ io.on("connection", (socket) => {
     do {
       room = makeRoomId();
     } while (roomsMeta.has(room));
-
-    roomsMeta.set(room, { maxPlayers, password });
     names.set(socket.id, name);
+
+    roomsMeta.set(room, { users: new Set([socket.id]), maxPlayers, password });
     socket.join(room);
     console.log(
       `Room ${room} created (max=${maxPlayers}) by ${name} ${socket.id}`
@@ -79,7 +80,8 @@ io.on("connection", (socket) => {
       return cb({ status: "error", message: "Room is full." });
     }
 
-    names, set(socket.id, name);
+    names.set(socket.id, name);
+    meta.users.add(socket.id);
     socket.join(room);
     console.log(
       `${name} ${socket.id} joined room ${room} (${count + 1}/${
@@ -94,6 +96,7 @@ io.on("connection", (socket) => {
     names.delete(socket.id);
 
     for (const [room, meta] of roomsMeta) {
+      if (!meta.users) continue;
       if (meta.users.has(socket.id)) {
         meta.users.delete(socket.id);
 
