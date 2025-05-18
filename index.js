@@ -35,7 +35,7 @@ app.get("/", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  console.log("a user connected:", socket.id);
+  console.log("connected:", socket.id);
 
   socket.on("createRoom", (data, cb) => {
     const { name, maxPlayers, password } = data;
@@ -85,14 +85,16 @@ io.on("connection", (socket) => {
     cb({ status: "ok", room });
   });
 
-  socket.on("disconnect", () => {
-    console.log("user disconnected:", socket.id);
-    for (const [room, { maxPlayers }] of roomsMeta) {
-      const clients = io.sockets.adapter.rooms.get(room);
-      if (!clients || clients.size === 0) {
-        roomsMeta.delete(room);
-        names.delete(socket.id);
-        console.log(`Room ${room} deleted (empty)`);
+  socket.on('disconnect', () => {
+    console.log('disconnected:', socket.id);
+    names.delete(socket.id);
+
+    for (const [room, meta] of roomsMeta) {
+      if (meta.users.delete(socket.id)) {
+        if (meta.users.size === 0) {
+          roomsMeta.delete(room);
+          console.log(`Room ${room} deleted (empty)`);
+        }
       }
     }
   });
