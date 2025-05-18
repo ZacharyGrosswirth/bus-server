@@ -34,6 +34,15 @@ app.get("/", (req, res) => {
   res.send(`Ride the Bus server is running on port ${port}`);
 });
 
+function broadcastUserList(room) {
+  const sockets = io.sockets.adapter.rooms.get(room) || new Set();
+  const users = Array.from(sockets).map((id) => ({
+    id,
+    name: userNames.get(id) || "Unknown",
+  }));
+  io.in(room).emit("userList", users);
+}
+
 io.on("connection", (socket) => {
   console.log("connected:", socket.id);
 
@@ -61,6 +70,7 @@ io.on("connection", (socket) => {
       `Room ${room} created (max=${maxPlayers}) by ${name} ${socket.id}`
     );
     cb({ status: "ok", room });
+    broadcastUserList(room);
   });
 
   socket.on("joinRoom", (data, cb) => {
@@ -89,6 +99,7 @@ io.on("connection", (socket) => {
       })`
     );
     cb({ status: "ok", room });
+    broadcastUserList(room);
   });
 
   socket.on("disconnect", () => {
@@ -103,6 +114,8 @@ io.on("connection", (socket) => {
         if (meta.users.size === 0) {
           roomsMeta.delete(room);
           console.log(`Room ${room} deleted (empty)`);
+        } else {
+          broadcastUserList(room);
         }
       }
     }
