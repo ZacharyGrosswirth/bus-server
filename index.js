@@ -56,7 +56,9 @@ io.on("connection", (socket) => {
     roomsMeta.set(room, { maxPlayers, password });
     names.set(socket.id, name);
     socket.join(room);
-    console.log(`Room ${room} created (max=${maxPlayers}) by ${name} ${socket.id}`);
+    console.log(
+      `Room ${room} created (max=${maxPlayers}) by ${name} ${socket.id}`
+    );
     cb({ status: "ok", room });
   });
 
@@ -77,23 +79,29 @@ io.on("connection", (socket) => {
       return cb({ status: "error", message: "Room is full." });
     }
 
-    names,set(socket.id, name);
+    names, set(socket.id, name);
     socket.join(room);
     console.log(
-      `${name} ${socket.id} joined room ${room} (${count + 1}/${meta.maxPlayers})`
+      `${name} ${socket.id} joined room ${room} (${count + 1}/${
+        meta.maxPlayers
+      })`
     );
     cb({ status: "ok", room });
   });
 
-  socket.on('disconnect', () => {
-    console.log('disconnected:', socket.id);
+  socket.on("disconnect", () => {
+    console.log("disconnected:", socket.id);
     names.delete(socket.id);
 
     for (const [room, meta] of roomsMeta) {
-      if (meta.users.delete(socket.id)) {
+      if (meta.users.has(socket.id)) {
+        meta.users.delete(socket.id);
+
         if (meta.users.size === 0) {
           roomsMeta.delete(room);
           console.log(`Room ${room} deleted (empty)`);
+        } else {
+          broadcastUserList(room);
         }
       }
     }
