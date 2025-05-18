@@ -24,6 +24,7 @@ const io = new Server(server, {
   },
 });
 const roomsMeta = new Map();
+const names = new Map();
 
 function makeRoomId() {
   return randomBytes(3).toString("hex").toUpperCase();
@@ -37,11 +38,12 @@ io.on("connection", (socket) => {
   console.log("a user connected:", socket.id);
 
   socket.on("createRoom", (data, cb) => {
-    const { maxPlayers, password } = data;
+    const { name, maxPlayers, password } = data;
     if (
       typeof maxPlayers !== "number" ||
       maxPlayers < 2 ||
-      typeof password !== "string"
+      typeof password !== "string" ||
+      typeof name !== "string"
     ) {
       return cb({ status: "error", message: "Invalid room options." });
     }
@@ -52,13 +54,14 @@ io.on("connection", (socket) => {
     } while (roomsMeta.has(room));
 
     roomsMeta.set(room, { maxPlayers, password });
+    names.set(socket.id, name);
     socket.join(room);
-    console.log(`Room ${room} created (max=${maxPlayers}) by ${socket.id}`);
+    console.log(`Room ${room} created (max=${maxPlayers}) by ${name} ${socket.id}`);
     cb({ status: "ok", room });
   });
 
   socket.on("joinRoom", (data, cb) => {
-    const { room, password } = data;
+    const { name, room, password } = data;
     const meta = roomsMeta.get(room);
 
     if (!meta) {
@@ -74,9 +77,10 @@ io.on("connection", (socket) => {
       return cb({ status: "error", message: "Room is full." });
     }
 
+    names,set(socket.id, name);
     socket.join(room);
     console.log(
-      `${socket.id} joined room ${room} (${count + 1}/${meta.maxPlayers})`
+      `${name} ${socket.id} joined room ${room} (${count + 1}/${meta.maxPlayers})`
     );
     cb({ status: "ok", room });
   });
@@ -87,6 +91,7 @@ io.on("connection", (socket) => {
       const clients = io.sockets.adapter.rooms.get(room);
       if (!clients || clients.size === 0) {
         roomsMeta.delete(room);
+        names.delete(socket.id);
         console.log(`Room ${room} deleted (empty)`);
       }
     }
