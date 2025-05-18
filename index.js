@@ -100,8 +100,6 @@ io.on("connection", (socket) => {
         if (meta.users.size === 0) {
           roomsMeta.delete(room);
           console.log(`Room ${room} deleted (empty)`);
-        } else {
-          broadcastUserList(room);
         }
       }
     }
